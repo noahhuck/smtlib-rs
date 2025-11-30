@@ -38,3 +38,26 @@ fn negative_numbers() {
         None => panic!("Oh no! This should never happen, as x was part of an assert"),
     }
 }
+
+#[test]
+fn real_power() {
+    let st = Storage::new();
+    let mut solver =
+        Solver::new(&st, crate::backend::z3_binary::Z3Binary::new("z3").unwrap()).unwrap();
+    let x = Real::new_const(&st, "x");
+
+    // Test: x^2 = 9, so x should be 3 or -3
+    solver
+        .assert(x.pow(Real::new(&st, 2.0))._eq(Real::new(&st, 9.0)))
+        .unwrap();
+    solver.assert(x.gt(Real::new(&st, 0.0))).unwrap(); // Force positive solution
+
+    let model = solver.check_sat_with_model().unwrap().expect_sat().unwrap();
+    match model.eval(x) {
+        Some(val) => {
+            println!("This is the value of x: {val}");
+            // The result should be approximately 3.0
+        }
+        None => panic!("Oh no! This should never happen, as x was part of an assert"),
+    }
+}

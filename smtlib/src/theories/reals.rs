@@ -77,6 +77,10 @@ impl<'st> Real<'st> {
     pub fn sort() -> Sort<'st> {
         Self::AST_SORT.into()
     }
+    /// Construct a new real.
+    pub fn new(st: &'st Storage, value: impl IntoWithStorage<'st, Real<'st>>) -> Real<'st> {
+        value.into_with_storage(st)
+    }
     fn binop<T: From<STerm<'st>>>(self, op: &'st str, other: Real<'st>) -> T {
         app(self.st(), op, (self.term(), other.term())).into()
     }
@@ -99,6 +103,12 @@ impl<'st> Real<'st> {
     /// Construct the term expressing `(abs self)`
     pub fn abs(self) -> Real<'st> {
         app(self.st(), "abs", self.term()).into()
+    }
+    /// Construct the term expressing `(^ self exponent)`
+    ///
+    /// Note: In Z3, the exponent should be a specific value (constant), not a variable.
+    pub fn pow(self, exponent: impl Into<Self>) -> Real<'st> {
+        self.binop("^", exponent.into())
     }
 }
 
