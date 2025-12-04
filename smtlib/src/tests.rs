@@ -61,3 +61,54 @@ fn real_power() {
         None => panic!("Oh no! This should never happen, as x was part of an assert"),
     }
 }
+
+#[test]
+fn int_to_real_conversion() {
+    let st = Storage::new();
+    let int_val = Int::new(&st, 5);
+    let real_val = Real::new(&st, 3.5);
+
+    // Convert int to real using to_real function
+    let int_as_real = int_val.to_real();
+
+    // Now we can compare them
+    let comparison = real_val.lt(int_as_real);
+    println!("3.5 < 5.0 (converted): {}", comparison);
+
+    // Test in a solver context
+    let mut solver =
+        Solver::new(&st, crate::backend::z3_binary::Z3Binary::new("z3").unwrap()).unwrap();
+    solver.assert(comparison).unwrap();
+    let result = solver.check_sat().unwrap();
+    println!("Solver result: {:?}", result);
+}
+
+#[test]
+fn real_int_conversions() {
+    let st = Storage::new();
+
+    // Test to_real conversion
+    let int_val = Int::new(&st, 7);
+    let real_from_int = int_val.to_real();
+
+    // Test to_int conversion
+    let real_val = Real::new(&st, 7.8);
+    let int_from_real = real_val.to_int();
+
+    // Test is_int predicate
+    let is_integer = real_val.is_int();
+    let real_integer = Real::new(&st, 5.0);
+    let is_exact_integer = real_integer.is_int();
+
+    println!("Int 7 to real: {}", real_from_int);
+    println!("Real 7.8 to int: {}", int_from_real);
+    println!("Is 7.8 an integer: {}", is_integer);
+    println!("Is 5.0 an integer: {}", is_exact_integer);
+
+    // Test mixed comparisons using conversions
+    let comparison1 = real_val.gt(int_val.to_real()); // 7.8 > 7.0
+    let comparison2 = real_val.to_int()._eq(int_val); // to_int(7.8) == 7
+
+    println!("7.8 > 7: {}", comparison1);
+    println!("to_int(7.8) == 7: {}", comparison2);
+}

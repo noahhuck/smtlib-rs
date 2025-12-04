@@ -110,6 +110,24 @@ impl<'st> Real<'st> {
     pub fn pow(self, exponent: impl Into<Self>) -> Real<'st> {
         self.binop("^", exponent.into())
     }
+
+    /// Convert this real to an integer using the SMT-LIB `to_int` function.
+    ///
+    /// This creates the term `(to_int self)` which converts a real number to
+    /// its integer part (truncation towards zero).
+    /// According to SMT-LIB: to_int maps each real number r to its integer part,
+    /// that is, to the largest integer n that satisfies (<= (to_real n) r).
+    pub fn to_int(self) -> crate::Int<'st> {
+        app(self.st(), "to_int", self.term()).into()
+    }
+
+    /// Test whether this real is an integer using the SMT-LIB `is_int` function.
+    ///
+    /// This creates the term `(is_int self)` which returns true if and only if
+    /// this real number is in the image of to_real (i.e., it's an integer value).
+    pub fn is_int(self) -> crate::Bool<'st> {
+        app(self.st(), "is_int", self.term()).into()
+    }
 }
 
 impl std::ops::Neg for Real<'_> {

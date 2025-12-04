@@ -115,6 +115,14 @@ impl<'st> Int<'st> {
     pub fn abs(self) -> Int<'st> {
         app(self.st(), "abs", self.term()).into()
     }
+
+    /// Convert this integer to a real using the SMT-LIB `to_real` function.
+    ///
+    /// This creates the term `(to_real self)` which converts an integer to
+    /// its corresponding real number representation.
+    pub fn to_real(self) -> crate::Real<'st> {
+        app(self.st(), "to_real", self.term()).into()
+    }
 }
 
 impl std::ops::Neg for Int<'_> {
