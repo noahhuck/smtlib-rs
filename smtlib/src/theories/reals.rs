@@ -44,6 +44,11 @@ impl<'st> From<Real<'st>> for STerm<'st> {
         i.0
     }
 }
+// impl<'st> From<(STerm<'st>, Sort<'st>)> for Real<'st> {
+//     fn from((t, _): (STerm<'st>, Sort<'st>)) -> Self {
+//         t.into()
+//     }
+// }
 impl<'st> From<STerm<'st>> for Real<'st> {
     fn from(t: STerm<'st>) -> Self {
         Real(t)

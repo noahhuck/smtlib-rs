@@ -385,6 +385,15 @@ impl<'st> Dynamic<'st> {
             actual: self.1.to_string(),
         })
     }
+
+    // Attempt to cast the dynamic into a [`Real`] if the sort
+    // matches.
+    // pub fn as_real(&self) -> Result<crate::Real<'st>, crate::Error> {
+    //     crate::Real::try_from_dynamic(*self).ok_or_else(|| crate::Error::DynamicCastSortMismatch {
+    //         expected: crate::Real::AST_SORT.to_string(),
+    //         actual: self.1.to_string(),
+    //     })
+    // }
 }
 impl<'st> Sorted<'st> for Dynamic<'st> {
     type Inner = Self;
