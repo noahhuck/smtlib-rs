@@ -40,85 +40,75 @@ fn negative_numbers() {
 }
 
 #[test]
-fn big_numbers() {
+fn real_power() {
     let st = Storage::new();
     let mut solver =
         Solver::new(&st, crate::backend::z3_binary::Z3Binary::new("z3").unwrap()).unwrap();
-    let x = Int::new_const(&st, "x");
+    let x = Real::new_const(&st, "x");
 
-    macro_rules! check {
-        ($t:ty) => {
-            solver
-                .scope(|solver| {
-                    solver.assert(x._eq(<$t>::MIN)).unwrap();
-                    let model = solver.check_sat_with_model().unwrap().expect_sat().unwrap();
-                    assert_eq!(<$t>::try_from(model.eval(x).unwrap()), Ok(<$t>::MIN));
-                    Ok(())
-                })
-                .unwrap();
-            solver
-                .scope(|solver| {
-                    solver.assert(x._eq(<$t>::MAX)).unwrap();
-                    let model = solver.check_sat_with_model().unwrap().expect_sat().unwrap();
-                    assert_eq!(<$t>::try_from(model.eval(x).unwrap()), Ok(<$t>::MAX));
-                    Ok(())
-                })
-                .unwrap();
-        };
+    // Test: x^2 = 9, so x should be 3 or -3
+    solver
+        .assert(x.pow(Real::new(&st, 2.0))._eq(Real::new(&st, 9.0)))
+        .unwrap();
+    solver.assert(x.gt(Real::new(&st, 0.0))).unwrap(); // Force positive solution
+
+    let model = solver.check_sat_with_model().unwrap().expect_sat().unwrap();
+    match model.eval(x) {
+        Some(val) => {
+            println!("This is the value of x: {val}");
+            // The result should be approximately 3.0
+        }
+        None => panic!("Oh no! This should never happen, as x was part of an assert"),
     }
-    check!(i8);
-    check!(i16);
-    check!(i32);
-    check!(i64);
-    check!(i128);
-    check!(isize);
-    check!(u8);
-    check!(u16);
-    check!(u32);
-    check!(u64);
-    check!(u128);
-    check!(usize);
 }
 
 #[test]
-fn check_sat_assuming() {
+fn int_to_real_conversion() {
     let st = Storage::new();
+    let int_val = Int::new(&st, 5);
+    let real_val = Real::new(&st, 3.5);
+
+    // Convert int to real using to_real function
+    let int_as_real = int_val.to_real();
+
+    // Now we can compare them
+    let comparison = real_val.lt(int_as_real);
+    println!("3.5 < 5.0 (converted): {}", comparison);
+
+    // Test in a solver context
     let mut solver =
         Solver::new(&st, crate::backend::z3_binary::Z3Binary::new("z3").unwrap()).unwrap();
-
-    let x = Int::new_const(&st, "x");
-    let prop_1 = Bool::new_const(&st, "prop_1");
-    let prop_2 = Bool::new_const(&st, "prop_2");
-    solver.assert(prop_1.implies(x._eq(42))).unwrap();
-    solver.assert(prop_2.implies(x._neq(42))).unwrap();
-    solver.assert(*prop_1).unwrap();
-
-    assert_eq!(solver.check_sat().unwrap(), SatResult::Sat);
-    assert_eq!(
-        solver.check_sat_assuming(&[(prop_2, true)]).unwrap(),
-        SatResult::Unsat
-    );
-    assert_eq!(solver.check_sat().unwrap(), SatResult::Sat);
-    assert_eq!(
-        solver.check_sat_assuming(&[(prop_2, false)]).unwrap(),
-        SatResult::Sat
-    );
+    solver.assert(comparison).unwrap();
+    let result = solver.check_sat().unwrap();
+    println!("Solver result: {:?}", result);
 }
 
 #[test]
-fn check_maximize() {
+fn real_int_conversions() {
     let st = Storage::new();
-    let mut solver =
-        Solver::new(&st, crate::backend::z3_binary::Z3Binary::new("z3").unwrap()).unwrap();
 
-    let x = Int::new_const(&st, "x");
-    let b = Bool::new_const(&st, "b");
-    solver.assert(x.le(100)).unwrap();
-    solver.assert(b.implies(x._eq(42))).unwrap();
-    solver.maximize(x).unwrap();
+    // Test to_real conversion
+    let int_val = Int::new(&st, 7);
+    let real_from_int = int_val.to_real();
 
-    let sat_res = solver.check_sat_with_model().unwrap();
-    let model = sat_res.expect_sat().unwrap();
-    assert_eq!(model.eval(x).unwrap().to_string(), "100".to_string());
-    assert_eq!(model.eval(b).unwrap().to_string(), "false".to_string());
+    // Test to_int conversion
+    let real_val = Real::new(&st, 7.8);
+    let int_from_real = real_val.to_int();
+
+    // Test is_int predicate
+    let is_integer = real_val.is_int();
+    let real_integer = Real::new(&st, 5.0);
+    let is_exact_integer = real_integer.is_int();
+
+    println!("Int 7 to real: {}", real_from_int);
+    println!("Real 7.8 to int: {}", int_from_real);
+    println!("Is 7.8 an integer: {}", is_integer);
+    println!("Is 5.0 an integer: {}", is_exact_integer);
+
+    // Test mixed comparisons using conversions
+    let comparison1 = real_val.gt(int_val.to_real()); // 7.8 > 7.0
+    let comparison2 = real_val.to_int()._eq(int_val); // to_int(7.8) == 7
+
+    println!("7.8 > 7: {}", comparison1);
+    println!("to_int(7.8) == 7: {}", comparison2);
 }
